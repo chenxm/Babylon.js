@@ -23,11 +23,11 @@
         font-size: 12px;
     }
     #header {
-        height: 32px;
+        height: 64px;
         font-size: 16px;
         color: white;
         background: white;
-        grid-row: 1;
+        grid-row: 2;
         text-align: center;
         display: grid;
         grid-template-columns: 30px 1fr;
@@ -50,6 +50,15 @@
 
         #title {
             background: white;
+            color: black;
+            grid-column: 2;
+            display: grid;
+            align-items: center;
+            text-align: center;
+        }
+
+        #refKey {
+            background: whitesmoke;
             color: black;
             grid-column: 2;
             display: grid;

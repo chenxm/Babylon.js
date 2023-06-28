@@ -50,6 +50,7 @@ import "./propertyTab.scss";
 import adtIcon from "../../imgs/adtIcon.svg";
 import { ControlTypes } from "../../controlTypes";
 import { EncodeArrayBufferToBase64 } from "core/Misc/stringTools";
+import { Container } from "gui/2D/controls/container";
 
 interface IPropertyTabComponentProps {
     globalState: GlobalState;
@@ -152,13 +153,35 @@ export class PropertyTabComponent extends React.Component<IPropertyTabComponentP
 
     saveLocally = () => {
         try {
-            const json = JSON.stringify(this.props.globalState.guiTexture.serializeContent());
-            StringTools.DownloadAsFile(this.props.globalState.hostDocument, json, "guiTexture.json");
+            const guiTexture = this.props.globalState.guiTexture;
+            const name = guiTexture.rootContainer.name ?? "guiTexture";
+            let tsContent = `import * as GUI from "@babylonjs/gui";\n\nexport interface ${name} {\n`;
+            this.enumChildren(guiTexture.rootContainer, (node) => {
+                const refKey = node.metadata?.refKey;
+                if(refKey) {
+                    tsContent += "\t" + refKey + ": GUI." + node.typeName + ";\n";
+                }
+            });
+            tsContent += "}";
+            console.log(tsContent);
+            const content = guiTexture.serializeContent();
+            const json = JSON.stringify(content);
+            StringTools.DownloadAsFile(this.props.globalState.hostDocument, json, name + ".json");
+            StringTools.DownloadAsFile(this.props.globalState.hostDocument, tsContent, name + ".ts");
         } catch (error) {
             this.props.globalState.hostWindow.alert("Unable to save your GUI");
             Tools.Error("Unable to save your GUI");
         }
     };
+
+    enumChildren(root: Container, callback: (node: Control) => void): void {
+        for (const child of root.children) {
+            callback(child);
+            if(child instanceof Container) {
+                this.enumChildren(child, callback);
+            }
+        }
+    }
 
     /**
      * Save the selected control as Json with file name of guiControl
@@ -285,6 +308,17 @@ export class PropertyTabComponent extends React.Component<IPropertyTabComponentP
                             lockObject={this._lockObject}
                             target={makeTargetsProxy(nodes, this.props.globalState.onPropertyChangedObservable)}
                             propertyName="name"
+                            onPropertyChangedObservable={this.props.globalState.onPropertyChangedObservable}
+                        />
+                    </div>
+                    <div id="refKey">
+                        <TextInputLineComponent
+                            noUnderline={true}
+                            lockObject={this._lockObject}
+                            target={makeTargetsProxy(nodes, this.props.globalState.onPropertyChangedObservable,
+                                (target, property) => (!target.metadata? undefined : target.metadata[property]),
+                                (target, property, value) => (target.metadata ?? (target.metadata = {}))[property] = value)}
+                            propertyName="refKey"
                             onPropertyChangedObservable={this.props.globalState.onPropertyChangedObservable}
                         />
                     </div>

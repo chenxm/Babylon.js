@@ -13,7 +13,8 @@ export const conflictingValuesPlaceholder = "—";
 export function makeTargetsProxy<Type>(
     targets: Type[],
     onPropertyChangedObservable?: Observable<PropertyChangedEvent>,
-    getProperty: (target: Type, property: keyof Type) => any = (target, property) => target[property]
+    getProperty: (target: Type, property: keyof Type) => any = (target, property) => target[property],
+    setProperty: (target: Type, property: keyof Type, value: any) => void = (target, property, value) => target[property] = value
 ) {
     return new Proxy(
         {},
@@ -33,13 +34,14 @@ export function makeTargetsProxy<Type>(
                 if (value === "—") return true;
                 const property = name as keyof Type;
                 for (const target of targets) {
-                    const initialValue = target[property];
-                    target[property] = value;
+                    const initialValue = getProperty(target, property);
+                    setProperty(target, property, value);
                     if (onPropertyChangedObservable) {
                         onPropertyChangedObservable.notifyObservers({
                             object: target,
+                            // TODO: could not real property exist. 
                             property: name as string,
-                            value: target[property],
+                            value: getProperty(target, property),
                             initialValue,
                         });
                     }
